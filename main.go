@@ -14,7 +14,7 @@ func main() {
 	flag.Parse()
 
 	log.Printf("mocket: reading script directory (%s)...\n", *scriptDir)
-  // not really...
+	// not really...
 
 	log.Printf("mocket: starting on (%s)...\n", *port)
 	http.HandleFunc("/", handlerFunction)
