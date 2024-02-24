@@ -35,7 +35,7 @@ func Add(path []string, tree *Tree) *Tree {
 		path = path[1:]
 	}
 
-  var node *Tree
+	var node *Tree
 	if node = tree.Children[path[0]]; node == nil {
 		node = makeTree(path[0])
 	}
@@ -46,13 +46,13 @@ func Add(path []string, tree *Tree) *Tree {
 }
 
 func Find(path []string, tree *Tree) *Tree {
-  if len(path) == 0 || tree == nil {
-    return tree
-  }
+	if len(path) == 0 || tree == nil {
+		return tree
+	}
 
-  if tree.Regexp != nil && tree.Regexp.String() == path[0] {
-    path = path[1:]
-  }
+	if tree.Regexp != nil && tree.Regexp.String() == path[0] {
+		path = path[1:]
+	}
 
-  return Find(path[1:], tree.Children[path[0]])
+	return Find(path[1:], tree.Children[path[0]])
 }
