@@ -13,9 +13,10 @@ var scriptDir = flag.String("s", "./scripts", "Script directory.")
 func main() {
 	flag.Parse()
 
-  log.Printf("mocket: reading script directory (%s)...\n", *scriptDir)
+	log.Printf("mocket: reading script directory (%s)...\n", *scriptDir)
+  // not really...
 
-  log.Printf("mocket: starting on (%s)...\n", *port)
+	log.Printf("mocket: starting on (%s)...\n", *port)
 	http.HandleFunc("/", handlerFunction)
 	log.Fatal(http.ListenAndServe(":"+*port, nil))
 }
