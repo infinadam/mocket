@@ -5,7 +5,7 @@ import "regexp"
 type Tree struct {
 	Regexp *regexp.Regexp
 
-	Children map[string]*Tree
+	Children []*Tree
 }
 
 func makeTree(name string) *Tree {
@@ -17,12 +17,32 @@ func makeTree(name string) *Tree {
 			return nil
 		}
 	}
-	t.Children = make(map[string]*Tree)
+	t.Children = make([]*Tree, 0)
 
 	return t
 }
 
-func Add(path []string, tree *Tree) *Tree {
+func (t *Tree) findChild(name string) *Tree {
+	for _, child := range t.Children {
+		if child.Regexp.String() == name || child.Regexp.MatchString(name) {
+			return child
+		}
+	}
+
+	return nil
+}
+
+func (t *Tree) addChild(child *Tree) {
+	if child == nil {
+		return
+	}
+	name := child.Regexp.String()
+	if node := t.findChild(name); node == nil {
+		t.Children = append(t.Children, child)
+	}
+}
+
+func Add(tree *Tree, path []string) *Tree {
 	if len(path) == 0 {
 		return tree
 	}
@@ -36,16 +56,16 @@ func Add(path []string, tree *Tree) *Tree {
 	}
 
 	var node *Tree
-	if node = tree.Children[path[0]]; node == nil {
+	if node = tree.findChild(path[0]); node == nil {
 		node = makeTree(path[0])
 	}
-	tree.Children[path[0]] = node
-	Add(path[1:], node)
+	tree.addChild(node)
+	Add(node, path[1:])
 
 	return tree
 }
 
-func Find(path []string, tree *Tree) *Tree {
+func Find(tree *Tree, path []string) *Tree {
 	if len(path) == 0 || tree == nil {
 		return tree
 	}
@@ -54,5 +74,5 @@ func Find(path []string, tree *Tree) *Tree {
 		path = path[1:]
 	}
 
-	return Find(path[1:], tree.Children[path[0]])
+	return Find(tree.findChild(path[0]), path[1:])
 }
