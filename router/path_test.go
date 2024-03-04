@@ -1,10 +1,10 @@
-package urlpath
+package router
 
 import "testing"
 
 // should create a tree node
 func TestMakeNode(t *testing.T) {
-	node := makeTree("test")
+	node := makePath("test")
 	if node == nil {
 		t.Fatal("failed to create new node")
 	}
@@ -18,7 +18,7 @@ func TestMakeNode(t *testing.T) {
 
 // should create a root node
 func TestMakeRoot(t *testing.T) {
-	root := makeTree("")
+	root := makePath("")
 	if root == nil {
 		t.Fatal("failed to create new node")
 	}
@@ -29,8 +29,8 @@ func TestMakeRoot(t *testing.T) {
 
 // should find a child in a tree's immediate children
 func TestFindChild(t *testing.T) {
-	tree := makeTree("")
-	child := makeTree("test")
+	tree := makePath("")
+	child := makePath("test")
 	tree.Children = append(tree.Children, child)
 
 	found := tree.findChild("test")
@@ -41,8 +41,8 @@ func TestFindChild(t *testing.T) {
 
 // should not find a child that is missing from the immediate children
 func TestFindMissingChild(t *testing.T) {
-	tree := makeTree("")
-	child := makeTree("test")
+	tree := makePath("")
+	child := makePath("test")
 	tree.Children = append(tree.Children, child)
 
 	found := tree.findChild("missing")
@@ -53,8 +53,8 @@ func TestFindMissingChild(t *testing.T) {
 
 // should find a child using regular expression
 func TestFindRegexChild(t *testing.T) {
-	tree := makeTree("")
-	child := makeTree(`\d`)
+	tree := makePath("")
+	child := makePath(`\d`)
 	tree.Children = append(tree.Children, child)
 
 	found := tree.findChild("123")
@@ -65,8 +65,8 @@ func TestFindRegexChild(t *testing.T) {
 
 // should add a child to a tree's children list
 func TestAddChild(t *testing.T) {
-	tree := makeTree("")
-	child := makeTree("child")
+	tree := makePath("")
+	child := makePath("child")
 
 	tree.addChild(child)
 	if len(tree.Children) != 1 {
@@ -76,7 +76,7 @@ func TestAddChild(t *testing.T) {
 
 // should not add a nil to a tree's children list
 func TestAddNilChild(t *testing.T) {
-	tree := makeTree("")
+	tree := makePath("")
 
 	tree.addChild(nil)
 	if len(tree.Children) != 0 {
@@ -86,11 +86,11 @@ func TestAddNilChild(t *testing.T) {
 
 // should not add a child with the same name
 func TestAddSameChild(t *testing.T) {
-	tree := makeTree("")
-	child := makeTree("child")
+	tree := makePath("")
+	child := makePath("child")
 	tree.Children = append(tree.Children, child)
 
-	tree.addChild(makeTree("child"))
+	tree.addChild(makePath("child"))
 	if len(tree.Children) > 1 {
 		t.Error("added child of the same name")
 	}
@@ -98,7 +98,7 @@ func TestAddSameChild(t *testing.T) {
 
 // should have well-defined children
 func TestMakeChildren(t *testing.T) {
-	node := makeTree("test")
+	node := makePath("")
 	if node == nil {
 		t.Fatal("failed to create new node")
 	}
@@ -109,16 +109,12 @@ func TestMakeChildren(t *testing.T) {
 
 // should do nothing if no path is given
 func TestNoPath(t *testing.T) {
-	tree := makeTree("test")
+	tree := makePath("")
 
-	tree = Add(tree, []string{})
+	child := tree.add([]string{})
 
-	if tree == nil {
-		t.Fatal("tree is nil")
-	}
-
-	if name := tree.Regexp.String(); tree.Regexp.String() != "test" {
-		t.Errorf("expected tree name \"test\", got %q", name)
+	if tree != child {
+		t.Error("expected tree to be returned")
 	}
 
 	if len(tree.Children) > 0 {
@@ -126,26 +122,10 @@ func TestNoPath(t *testing.T) {
 	}
 }
 
-// should make a rooted tree from a path
-func TestCreateTree(t *testing.T) {
-	tree := Add(nil, []string{"test"})
-
-	if tree == nil {
-		t.Fatal("tree is nil")
-	}
-
-	if tree.Children == nil || len(tree.Children) != 1 {
-		t.Error("invalid tree children")
-	}
-}
-
 // should make a tree with a path
 func TestCreatePath(t *testing.T) {
-	tree := Add(nil, []string{"test", "child"})
-
-	if tree == nil {
-		t.Fatal("tree is nil")
-	}
+	tree := makePath("")
+	tree.add([]string{"test", "child"})
 
 	if tree.Children == nil || len(tree.Children) != 1 {
 		t.Error("invalid tree children")
@@ -162,11 +142,11 @@ func TestCreatePath(t *testing.T) {
 
 // should add a child to an existing tree
 func TestAddToExisting(t *testing.T) {
-	tree := makeTree("")
-	child := makeTree("child1")
+	tree := makePath("")
+	child := makePath("child1")
 	tree.addChild(child)
 
-	Add(tree, []string{"child1", "child2"})
+	tree.add([]string{"child1", "child2"})
 
 	if child.findChild("child2") == nil {
 		t.Error("could not find \"child2\".")
@@ -175,13 +155,13 @@ func TestAddToExisting(t *testing.T) {
 
 // should not add anything if the path exists
 func TestIdentity(t *testing.T) {
-	tree := makeTree("")
-	child1 := makeTree("child1")
-	child2 := makeTree("child2")
+	tree := makePath("")
+	child1 := makePath("child1")
+	child2 := makePath("child2")
 	tree.addChild(child1)
 	child1.addChild(child2)
 
-	Add(tree, []string{"child1", "child2"})
+	tree.add([]string{"child1", "child2"})
 
 	if tree.findChild("child1") != child1 {
 		t.Error("unexpected child1")
@@ -198,13 +178,13 @@ func TestIdentity(t *testing.T) {
 
 // should add an adjacent node
 func TestAddAdjacent(t *testing.T) {
-	tree := makeTree("")
-	child1 := makeTree("child1")
-	child2 := makeTree("child2")
+	tree := makePath("")
+	child1 := makePath("child1")
+	child2 := makePath("child2")
 	tree.addChild(child1)
 	child1.addChild(child2)
 
-	Add(tree, []string{"child1", "child3"})
+	tree.add([]string{"child1", "child3"})
 
 	if len(tree.Children) != 1 {
 		t.Errorf("len(tree children) != 1 (%d)", len(tree.Children))
@@ -217,11 +197,11 @@ func TestAddAdjacent(t *testing.T) {
 
 // should find a simple path
 func TestFindSimple(t *testing.T) {
-	tree := makeTree("")
-	child := makeTree("child")
+	tree := makePath("")
+	child := makePath("child")
 	tree.addChild(child)
 
-	found := Find(tree, []string{"child"})
+	found := tree.find([]string{"child"})
 
 	if found == nil || found.Regexp.String() != "child" {
 		t.Error("did not find \"child\"")
@@ -230,53 +210,47 @@ func TestFindSimple(t *testing.T) {
 
 // should find a deep path
 func TestFindDeep(t *testing.T) {
-	tree := makeTree("")
-	child1 := makeTree("child1")
-	child2 := makeTree("child2")
+	tree := makePath("")
+	child1 := makePath("child1")
+	child2 := makePath("child2")
 	tree.addChild(child1)
 	child1.addChild(child2)
 
-	found := Find(tree, []string{"child1", "child2"})
+	found := tree.find([]string{"child1", "child2"})
 
 	if found == nil || found.Regexp.String() != "child2" {
 		t.Error("did not find \"child2\"")
 	}
 }
 
-// should find nothing in a nil tree
-func TestFindNil(t *testing.T) {
-	if found := Find(nil, []string{"test"}); found != nil {
-		t.Error("expected nil when searching nil")
-	}
-}
-
 // should find nothing in an empty tree
 func TestFindEmpty(t *testing.T) {
-	if found := Find(makeTree(""), []string{"test"}); found != nil {
+	tree := makePath("")
+	if found := tree.find([]string{"test"}); found != nil {
 		t.Error("expected nil when searching empty tree")
 	}
 }
 
 // should not find a missing path
 func TestFindMissingPath(t *testing.T) {
-	tree := makeTree("")
-	child := makeTree("child")
+	tree := makePath("")
+	child := makePath("child")
 	tree.addChild(child)
 
-	if found := Find(tree, []string{"missing"}); found != nil {
+	if found := tree.find([]string{"missing"}); found != nil {
 		t.Error("expected nil when searching missing path")
 	}
 }
 
 // should find a node through Regexp application
 func TestFindRegexp(t *testing.T) {
-	tree := makeTree("")
-	child1 := makeTree(`\d+`)
-	child2 := makeTree("test")
+	tree := makePath("")
+	child1 := makePath(`\d+`)
+	child2 := makePath("test")
 	tree.addChild(child1)
 	child1.addChild(child2)
 
-	found := Find(tree, []string{"123", "test"})
+	found := tree.find([]string{"123", "test"})
 	if found != child2 {
 		t.Error("did not find \"test\"")
 	}
