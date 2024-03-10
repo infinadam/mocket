@@ -8,14 +8,11 @@ type Path struct {
 	Children []*Path
 }
 
-func makePath(name string) *Path {
+func makePath(re *regexp.Regexp) *Path {
 	p := new(Path)
 
-	var err error
-	if name != "" {
-		if p.Regexp, err = regexp.Compile(name); err != nil {
-			return nil
-		}
+	if re != nil && re.String() != "" {
+		p.Regexp = re
 	}
 	p.Children = make([]*Path, 0)
 
@@ -43,17 +40,17 @@ func (p *Path) addChild(child *Path) {
 	}
 }
 
-func (p *Path) add(path []string) *Path {
+func (p *Path) add(path []*regexp.Regexp) *Path {
 	if len(path) == 0 {
 		return p
 	}
 
-	if p.Regexp != nil && p.Regexp.String() == path[0] {
+	if p.Regexp != nil && p.Regexp.String() == path[0].String() {
 		path = path[1:]
 	}
 
 	var node *Path
-	if node = p.findChild(path[0]); node == nil {
+	if node = p.findChild(path[0].String()); node == nil {
 		node = makePath(path[0])
 	}
 	p.addChild(node)
@@ -66,7 +63,7 @@ func (p *Path) find(path []string) *Path {
 		return p
 	}
 
-	if p.Regexp != nil && p.Regexp.String() == path[0] {
+	if p.Regexp != nil && p.Regexp.MatchString(path[0]) {
 		path = path[1:]
 	}
 
