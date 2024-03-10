@@ -2,10 +2,87 @@ package router
 
 import "testing"
 
+// should correctly parse the request verb
+func TestHTTPActionRequestVerb(t *testing.T) {
+	result, err := HTTPActionFromJSON(`{
+		"request": {
+			"verb": "get"
+		}
+	}`)
+
+	if err != nil {
+		t.Fatalf("received error (%v)", err)
+	}
+
+	if result.Request.Verb != "get" {
+		t.Errorf("expected \"get\", received %q", result.Request.Verb)
+	}
+}
+
+// should parse HTTP verbs to a standard case
+func TestHTTPActionRequestVerbCase(t *testing.T) {
+	result, err := HTTPActionFromJSON(`{
+		"request": {
+			"verb": "GET"
+		}
+	}`)
+
+	if err != nil {
+		t.Fatalf("received error (%v)", err)
+	}
+
+	if result.Request.Verb != "get" {
+		t.Errorf("expected \"get\", received %q", result.Request.Verb)
+	}
+}
+
+// should return an error when receiving an unrecognized verb
+func TestHTTPActionRequestUnknownVerb(t *testing.T) {
+	_, err := HTTPActionFromJSON(`{
+		"request": {
+			"verb": "unknown"
+		}
+	}`)
+
+	if err == nil {
+		t.Errorf("expected error, but received none")
+	}
+}
+
+// should correctly parse the URL path
+func TestHTTPActionRequestPath(t *testing.T) {
+	result, err := HTTPActionFromJSON(`{
+		"request": {
+			"verb": "get",
+			"url": "/my/test/path"
+		}
+	}`)
+
+	if err != nil {
+		t.Fatalf("received error (%v)", err)
+	}
+
+	if result.Request.Path == nil {
+		t.Fatal("path is nil")
+	}
+
+	expected := []string{"my", "test", "path"}
+	if len(result.Request.Path) != len(expected) {
+		t.Fatal("path is wrong length")
+	}
+
+	for i, s := range expected {
+		if result.Request.Path[i].String() != s {
+			t.Errorf("expected %q, received %q", s, result.Request.Path[i])
+		}
+	}
+}
+
 // should correctly parse request headers
 func TestHTTPActionRequestHeaders(t *testing.T) {
 	result, err := HTTPActionFromJSON(`{
 		"request": {
+			"verb": "get",
 			"headers": {
 				"content-type": "test"
 			}
@@ -13,7 +90,7 @@ func TestHTTPActionRequestHeaders(t *testing.T) {
 	}`)
 
 	if err != nil {
-		t.Errorf("received error (%v)", err)
+		t.Fatalf("received error (%v)", err)
 	}
 
 	headerLen := len(result.Request.Headers)
@@ -34,6 +111,7 @@ func TestHTTPActionRequestHeaders(t *testing.T) {
 func TestHTTPActionRequestHeaderError(t *testing.T) {
 	result, err := HTTPActionFromJSON(`{
 		"request": {
+			"verb": "get",
 			"headers": {
 				"[": "test"
 			}
@@ -53,6 +131,7 @@ func TestHTTPActionRequestHeaderError(t *testing.T) {
 func TestHTTPActionRequestBody(t *testing.T) {
 	result, err := HTTPActionFromJSON(`{
 		"request": {
+			"verb": "get",
 			"body": {
 				"data": "test body"
 			}
@@ -60,7 +139,7 @@ func TestHTTPActionRequestBody(t *testing.T) {
 	}`)
 
 	if err != nil {
-		t.Errorf("received error (%v)", err)
+		t.Fatalf("received error (%v)", err)
 	}
 
 	body := result.Request.Body.String()
@@ -74,6 +153,7 @@ func TestHTTPActionRequestBody(t *testing.T) {
 func TestHTTPActionRequestBodyError(t *testing.T) {
 	result, err := HTTPActionFromJSON(`{
 		"request": {
+			"verb": "get",
 			"body": {
 				"data": "["
 			}
@@ -92,13 +172,16 @@ func TestHTTPActionRequestBodyError(t *testing.T) {
 // should correctly parse a response status code
 func TestHTTPActionResponseStatus(t *testing.T) {
 	result, err := HTTPActionFromJSON(`{
+		"request": {
+			"verb": "get"
+		},
 		"response": {
 			"status": 200
 		}
 	}`)
 
 	if err != nil {
-		t.Errorf("received error (%v)", err)
+		t.Fatalf("received error (%v)", err)
 	}
 
 	status := result.Response.Status
@@ -110,6 +193,9 @@ func TestHTTPActionResponseStatus(t *testing.T) {
 // should correctly parse response headers
 func TestHTTPActionResponseHeaders(t *testing.T) {
 	result, err := HTTPActionFromJSON(`{
+		"request": {
+			"verb": "get"
+		},
 		"response": {
 			"headers": {
 				"content-type": "test",
@@ -119,7 +205,7 @@ func TestHTTPActionResponseHeaders(t *testing.T) {
 	}`)
 
 	if err != nil {
-		t.Errorf("received error (%v)", err)
+		t.Fatalf("received error (%v)", err)
 	}
 
 	headers := result.Response.Headers
@@ -137,6 +223,9 @@ func TestHTTPActionResponseHeaders(t *testing.T) {
 // should correctly parse a response body
 func TestHTTPActionResponseBody(t *testing.T) {
 	result, err := HTTPActionFromJSON(`{
+		"request": {
+			"verb": "get"
+		},
 		"response": {
 			"body": {
 				"data": "test data"
@@ -145,7 +234,7 @@ func TestHTTPActionResponseBody(t *testing.T) {
 	}`)
 
 	if err != nil {
-		t.Errorf("received error (%v)", err)
+		t.Fatalf("received error (%v)", err)
 	}
 
 	expected := "{\"data\":\"test data\"}"

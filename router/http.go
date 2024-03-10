@@ -2,7 +2,9 @@ package router
 
 import (
 	"encoding/json"
+	"errors"
 	"regexp"
+	"strings"
 )
 
 type Header struct {
@@ -12,6 +14,8 @@ type Header struct {
 
 type HTTPAction struct {
 	Request struct {
+		Verb    string
+		Path    []*regexp.Regexp
 		Headers []Header
 		Body    *regexp.Regexp
 	}
@@ -24,6 +28,8 @@ type HTTPAction struct {
 
 type httpJSON struct {
 	Request struct {
+		Verb    string            `json:"verb"`
+		Path    string            `json:"url"`
 		Headers map[string]string `json:"headers"`
 		Body    any               `json:"body"`
 	} `json:"request"`
@@ -32,6 +38,34 @@ type httpJSON struct {
 		Headers map[string]string `json:"headers"`
 		Body    any               `json:"body"`
 	} `json:"response"`
+}
+
+func requestVerb(action *HTTPAction, parsed *httpJSON) error {
+	verb := strings.ToLower(parsed.Request.Verb)
+
+	switch verb {
+	case "delete", "get", "head", "options", "patch", "post", "put":
+		action.Request.Verb = verb
+		return nil
+	}
+	return errors.New("unrecognized verb")
+}
+
+func requestPath(action *HTTPAction, parsed *httpJSON) error {
+	var regexps []*regexp.Regexp
+
+	for _, s := range strings.Split(parsed.Request.Path, "/") {
+		if s == "" {
+			continue
+		} else if re, err := regexp.Compile(s); err != nil {
+			return nil
+		} else {
+			regexps = append(regexps, re)
+		}
+	}
+
+	action.Request.Path = regexps
+	return nil
 }
 
 func requestHeaders(action *HTTPAction, parsed *httpJSON) error {
@@ -70,7 +104,7 @@ func HTTPActionFromJSON(input string) (*HTTPAction, error) {
 	}
 
 	parsers := []func(action *HTTPAction, parsed *httpJSON) error{
-		unmarshal, requestHeaders, requestBody,
+		unmarshal, requestVerb, requestPath, requestHeaders, requestBody,
 	}
 	for _, f := range parsers {
 		if err := f(action, &parsed); err != nil {
