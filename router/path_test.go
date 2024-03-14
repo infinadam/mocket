@@ -140,7 +140,7 @@ func TestPathNoPath(t *testing.T) {
 	re, _ := regexp.Compile("")
 	tree := makePath(re)
 
-	child := tree.add([]*regexp.Regexp{})
+	child := tree.Add([]*regexp.Regexp{})
 
 	if tree != child {
 		t.Error("expected tree to be returned")
@@ -162,7 +162,7 @@ func TestPathCreatePath(t *testing.T) {
 	re, _ = regexp.Compile("child")
 	res = append(res, re)
 
-	tree.add(res)
+	tree.Add(res)
 
 	if tree.Children == nil || len(tree.Children) != 1 {
 		t.Error("invalid tree children")
@@ -192,7 +192,7 @@ func TestPathAddToExisting(t *testing.T) {
 	re, _ = regexp.Compile("child2")
 	res = append(res, re)
 
-	tree.add(res)
+	tree.Add(res)
 
 	if child.findChild("child2") == nil {
 		t.Error("could not find \"child2\".")
@@ -217,7 +217,7 @@ func TestPathIdentity(t *testing.T) {
 	re, _ = regexp.Compile("child2")
 	res = append(res, re)
 
-	tree.add(res)
+	tree.Add(res)
 
 	if tree.findChild("child1") != child1 {
 		t.Error("unexpected child1")
@@ -250,7 +250,7 @@ func TestPathAddAdjacent(t *testing.T) {
 	re, _ = regexp.Compile("child3")
 	res = append(res, re)
 
-	tree.add(res)
+	tree.Add(res)
 
 	if len(tree.Children) != 1 {
 		t.Errorf("len(tree children) != 1 (%d)", len(tree.Children))
@@ -270,7 +270,7 @@ func TestPathFindSimple(t *testing.T) {
 
 	tree.addChild(child)
 
-	found := tree.find([]string{"child"})
+	found := tree.Find([]string{"child"})
 
 	if found == nil || found.Regexp.String() != "child" {
 		t.Error("did not find \"child\"")
@@ -289,7 +289,7 @@ func TestPathFindDeep(t *testing.T) {
 	tree.addChild(child1)
 	child1.addChild(child2)
 
-	found := tree.find([]string{"child1", "child2"})
+	found := tree.Find([]string{"child1", "child2"})
 
 	if found == nil || found.Regexp.String() != "child2" {
 		t.Error("did not find \"child2\"")
@@ -300,7 +300,7 @@ func TestPathFindDeep(t *testing.T) {
 func TestPathFindEmpty(t *testing.T) {
 	re, _ := regexp.Compile("")
 	tree := makePath(re)
-	if found := tree.find([]string{"test"}); found != nil {
+	if found := tree.Find([]string{"test"}); found != nil {
 		t.Error("expected nil when searching empty tree")
 	}
 }
@@ -314,7 +314,7 @@ func TestPathFindMissingPath(t *testing.T) {
 
 	tree.addChild(child)
 
-	if found := tree.find([]string{"missing"}); found != nil {
+	if found := tree.Find([]string{"missing"}); found != nil {
 		t.Error("expected nil when searching missing path")
 	}
 }
@@ -332,7 +332,7 @@ func TestPathFindRegexp(t *testing.T) {
 	tree.addChild(child1)
 	child1.addChild(child2)
 
-	found := tree.find([]string{"123", "test"})
+	found := tree.Find([]string{"123", "test"})
 	if found != child2 {
 		t.Error("did not find \"test\"")
 	}

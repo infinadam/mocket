@@ -14,15 +14,14 @@ type Header struct {
 
 type HTTPAction struct {
 	Request struct {
-		Verb    string
 		Path    []*regexp.Regexp
 		Headers []Header
 		Body    *regexp.Regexp
 	}
 	Response struct {
-		Status  uint8
+		Status  int
 		Headers map[string]string
-		Body    string
+		Body    []byte
 	}
 }
 
@@ -34,25 +33,22 @@ type httpJSON struct {
 		Body    any               `json:"body"`
 	} `json:"request"`
 	Response struct {
-		Status  uint8             `json:"status"`
+		Status  int               `json:"status"`
 		Headers map[string]string `json:"headers"`
 		Body    any               `json:"body"`
 	} `json:"response"`
 }
 
-func requestVerb(action *HTTPAction, parsed *httpJSON) error {
+func requestPath(action *HTTPAction, parsed *httpJSON) error {
 	verb := strings.ToLower(parsed.Request.Verb)
 
 	switch verb {
 	case "delete", "get", "head", "options", "patch", "post", "put":
-		action.Request.Verb = verb
-		return nil
+		re, _ := regexp.Compile(verb)
+		action.Request.Path = append(action.Request.Path, re)
+	default:
+		return errors.New("unrecognized verb")
 	}
-	return errors.New("unrecognized verb")
-}
-
-func requestPath(action *HTTPAction, parsed *httpJSON) error {
-	var regexps []*regexp.Regexp
 
 	for _, s := range strings.Split(parsed.Request.Path, "/") {
 		if s == "" {
@@ -60,11 +56,10 @@ func requestPath(action *HTTPAction, parsed *httpJSON) error {
 		} else if re, err := regexp.Compile(s); err != nil {
 			return nil
 		} else {
-			regexps = append(regexps, re)
+			action.Request.Path = append(action.Request.Path, re)
 		}
 	}
 
-	action.Request.Path = regexps
 	return nil
 }
 
@@ -104,7 +99,7 @@ func HTTPActionFromJSON(input string) (*HTTPAction, error) {
 	}
 
 	parsers := []func(action *HTTPAction, parsed *httpJSON) error{
-		unmarshal, requestVerb, requestPath, requestHeaders, requestBody,
+		unmarshal, requestPath, requestHeaders, requestBody,
 	}
 	for _, f := range parsers {
 		if err := f(action, &parsed); err != nil {
@@ -113,7 +108,7 @@ func HTTPActionFromJSON(input string) (*HTTPAction, error) {
 	}
 
 	body, _ := json.Marshal(parsed.Response.Body)
-	action.Response.Body = string(body)
+	action.Response.Body = body
 	action.Response.Status = parsed.Response.Status
 	action.Response.Headers = parsed.Response.Headers
 

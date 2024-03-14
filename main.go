@@ -14,13 +14,14 @@ func main() {
 	flag.Parse()
 
 	log.Printf("mocket: reading script directory (%s)...\n", *scriptDir)
-	// not really...
+	var server *Server
+	var err error
+	if server, err = MakeServer(*scriptDir); err != nil {
+		fmt.Printf("mocket: error making server (%v)", err)
+		return
+	}
 
 	log.Printf("mocket: starting on (%s)...\n", *port)
-	http.HandleFunc("/", handlerFunction)
+	http.HandleFunc("/", server.HandleRequest)
 	log.Fatal(http.ListenAndServe(":"+*port, nil))
-}
-
-func handlerFunction(w http.ResponseWriter, req *http.Request) {
-	fmt.Fprintf(w, "hello\n")
 }

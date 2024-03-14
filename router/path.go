@@ -4,6 +4,8 @@ import "regexp"
 
 type Path struct {
 	Regexp *regexp.Regexp
+	// this should be a generic in the future.
+	Action *HTTPAction
 
 	Children []*Path
 }
@@ -40,7 +42,7 @@ func (p *Path) addChild(child *Path) {
 	}
 }
 
-func (p *Path) add(path []*regexp.Regexp) *Path {
+func (p *Path) Add(path []*regexp.Regexp) *Path {
 	if len(path) == 0 {
 		return p
 	}
@@ -55,10 +57,10 @@ func (p *Path) add(path []*regexp.Regexp) *Path {
 	}
 	p.addChild(node)
 
-	return node.add(path[1:])
+	return node.Add(path[1:])
 }
 
-func (p *Path) find(path []string) *Path {
+func (p *Path) Find(path []string) *Path {
 	if len(path) == 0 {
 		return p
 	}
@@ -67,5 +69,5 @@ func (p *Path) find(path []string) *Path {
 		path = path[1:]
 	}
 
-	return p.findChild(path[0]).find(path[1:])
+	return p.findChild(path[0]).Find(path[1:])
 }

@@ -14,8 +14,14 @@ func TestHTTPActionRequestVerb(t *testing.T) {
 		t.Fatalf("received error (%v)", err)
 	}
 
-	if result.Request.Verb != "get" {
-		t.Errorf("expected \"get\", received %q", result.Request.Verb)
+	l := len(result.Request.Path)
+	if l != 1 {
+		t.Fatalf("expected a path length of 1, got %d", l)
+	}
+
+	verb := result.Request.Path[0].String()
+	if verb != "get" {
+		t.Errorf("expected \"get\", received %q", verb)
 	}
 }
 
@@ -31,8 +37,14 @@ func TestHTTPActionRequestVerbCase(t *testing.T) {
 		t.Fatalf("received error (%v)", err)
 	}
 
-	if result.Request.Verb != "get" {
-		t.Errorf("expected \"get\", received %q", result.Request.Verb)
+	l := len(result.Request.Path)
+	if l != 1 {
+		t.Fatalf("expected a path length of 1, got %d", l)
+	}
+
+	verb := result.Request.Path[0].String()
+	if verb != "get" {
+		t.Errorf("expected \"get\", received %q", verb)
 	}
 }
 
@@ -66,7 +78,7 @@ func TestHTTPActionRequestPath(t *testing.T) {
 		t.Fatal("path is nil")
 	}
 
-	expected := []string{"my", "test", "path"}
+	expected := []string{"get", "my", "test", "path"}
 	if len(result.Request.Path) != len(expected) {
 		t.Fatal("path is wrong length")
 	}
@@ -239,7 +251,7 @@ func TestHTTPActionResponseBody(t *testing.T) {
 
 	expected := "{\"data\":\"test data\"}"
 	body := result.Response.Body
-	if body != expected {
+	if string(body) != expected {
 		t.Errorf("expected body to be %q, received %q", expected, body)
 	}
 }
