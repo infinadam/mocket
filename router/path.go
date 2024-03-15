@@ -12,17 +12,6 @@ type Path struct {
 	Children []*Path
 }
 
-func makePath(re *regexp.Regexp) *Path {
-	p := new(Path)
-
-	if re != nil && re.String() != "" {
-		p.Regexp = re
-	}
-	p.Children = make([]*Path, 0)
-
-	return p
-}
-
 func (p *Path) findChild(name string) *Path {
 	for _, child := range p.Children {
 		re := child.Regexp
@@ -53,9 +42,11 @@ func (p *Path) Add(path []*regexp.Regexp) *Path {
 		path = path[1:]
 	}
 
-	var node *Path
-	if node = p.findChild(path[0].String()); node == nil {
-		node = makePath(path[0])
+	node := p.findChild(path[0].String())
+	if node == nil {
+		node = new(Path)
+		node.Regexp = path[0]
+		node.Children = make([]*Path, 0)
 	}
 	p.addChild(node)
 

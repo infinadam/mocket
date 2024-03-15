@@ -11,6 +11,26 @@ type Server struct {
 	path router.Path
 }
 
+func actionFromEntry(dir string, e os.DirEntry) (*router.HTTPAction, error) {
+	if e.IsDir() {
+		return nil, nil
+	}
+
+	var err error
+	var json []byte
+
+	if json, err = os.ReadFile(dir + "/" + e.Name()); err != nil {
+		return nil, err
+	}
+
+	var action *router.HTTPAction
+	if action, err = router.HTTPActionFromJSON(json); err != nil {
+		return nil, err
+	}
+
+	return action, nil
+}
+
 func MakeServer(dir string) (*Server, error) {
 	var entries []os.DirEntry
 	var err error
@@ -20,16 +40,10 @@ func MakeServer(dir string) (*Server, error) {
 		return nil, err
 	}
 
-	var json []byte
 	for _, e := range entries {
-		if !e.IsDir() {
-			if json, err = os.ReadFile(dir + "/" + e.Name()); err != nil {
-				return nil, err
-			}
-			action, err := router.HTTPActionFromJSON(string(json))
-			if err != nil {
-				return nil, err
-			}
+		if action, err := actionFromEntry(dir, e); err != nil {
+			return nil, err
+		} else {
 			child := server.path.Add(action.Request.Path)
 			child.Action = action
 		}

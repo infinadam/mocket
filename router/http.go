@@ -29,7 +29,7 @@ type HTTPAction struct {
 type httpJSON struct {
 	Request struct {
 		Method  string            `json:"method"`
-		Path    string            `json:"url"`
+		Path    string            `json:"path"`
 		Headers map[string]string `json:"headers"`
 		Body    any               `json:"body"`
 	} `json:"request"`
@@ -90,7 +90,7 @@ func requestBody(action *HTTPAction, parsed *httpJSON) error {
 	return err
 }
 
-func HTTPActionFromJSON(input string) (*HTTPAction, error) {
+func HTTPActionFromJSON(input []byte) (*HTTPAction, error) {
 	var parsed httpJSON
 	action := new(HTTPAction)
 
