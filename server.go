@@ -46,13 +46,12 @@ func (s *Server) HandleRequest(w http.ResponseWriter, req *http.Request) {
 		url[0] = strings.ToLower(req.Method)
 	}
 
-	child := s.path.Find(url)
+	node := s.path.Find(url)
 
-	if child != nil {
-		for k, v := range child.Action.Response.Headers {
-			w.Header().Set(k, v)
-		}
-		w.WriteHeader(child.Action.Response.Status)
-		w.Write(child.Action.Response.Body)
+	if node == nil || node.Action == nil {
+		w.WriteHeader(404)
+		return
 	}
+
+	node.Action.Write(w)
 }

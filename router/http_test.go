@@ -2,11 +2,11 @@ package router
 
 import "testing"
 
-// should correctly parse the request verb
-func TestHTTPActionRequestVerb(t *testing.T) {
+// should correctly parse the request method
+func TestHTTPActionRequestMethod(t *testing.T) {
 	result, err := HTTPActionFromJSON(`{
 		"request": {
-			"verb": "get"
+			"method": "get"
 		}
 	}`)
 
@@ -19,17 +19,17 @@ func TestHTTPActionRequestVerb(t *testing.T) {
 		t.Fatalf("expected a path length of 1, got %d", l)
 	}
 
-	verb := result.Request.Path[0].String()
-	if verb != "get" {
-		t.Errorf("expected \"get\", received %q", verb)
+	method := result.Request.Path[0].String()
+	if method != "get" {
+		t.Errorf("expected \"get\", received %q", method)
 	}
 }
 
-// should parse HTTP verbs to a standard case
-func TestHTTPActionRequestVerbCase(t *testing.T) {
+// should parse HTTP methods to a standard case
+func TestHTTPActionRequestMethodCase(t *testing.T) {
 	result, err := HTTPActionFromJSON(`{
 		"request": {
-			"verb": "GET"
+			"method": "GET"
 		}
 	}`)
 
@@ -42,17 +42,17 @@ func TestHTTPActionRequestVerbCase(t *testing.T) {
 		t.Fatalf("expected a path length of 1, got %d", l)
 	}
 
-	verb := result.Request.Path[0].String()
-	if verb != "get" {
-		t.Errorf("expected \"get\", received %q", verb)
+	method := result.Request.Path[0].String()
+	if method != "get" {
+		t.Errorf("expected \"get\", received %q", method)
 	}
 }
 
-// should return an error when receiving an unrecognized verb
-func TestHTTPActionRequestUnknownVerb(t *testing.T) {
+// should return an error when receiving an unrecognized method
+func TestHTTPActionRequestUnknownMethod(t *testing.T) {
 	_, err := HTTPActionFromJSON(`{
 		"request": {
-			"verb": "unknown"
+			"method": "unknown"
 		}
 	}`)
 
@@ -65,7 +65,7 @@ func TestHTTPActionRequestUnknownVerb(t *testing.T) {
 func TestHTTPActionRequestPath(t *testing.T) {
 	result, err := HTTPActionFromJSON(`{
 		"request": {
-			"verb": "get",
+			"method": "get",
 			"url": "/my/test/path"
 		}
 	}`)
@@ -94,7 +94,7 @@ func TestHTTPActionRequestPath(t *testing.T) {
 func TestHTTPActionRequestHeaders(t *testing.T) {
 	result, err := HTTPActionFromJSON(`{
 		"request": {
-			"verb": "get",
+			"method": "get",
 			"headers": {
 				"content-type": "test"
 			}
@@ -123,7 +123,7 @@ func TestHTTPActionRequestHeaders(t *testing.T) {
 func TestHTTPActionRequestHeaderError(t *testing.T) {
 	result, err := HTTPActionFromJSON(`{
 		"request": {
-			"verb": "get",
+			"method": "get",
 			"headers": {
 				"[": "test"
 			}
@@ -143,7 +143,7 @@ func TestHTTPActionRequestHeaderError(t *testing.T) {
 func TestHTTPActionRequestBody(t *testing.T) {
 	result, err := HTTPActionFromJSON(`{
 		"request": {
-			"verb": "get",
+			"method": "get",
 			"body": {
 				"data": "test body"
 			}
@@ -165,7 +165,7 @@ func TestHTTPActionRequestBody(t *testing.T) {
 func TestHTTPActionRequestBodyError(t *testing.T) {
 	result, err := HTTPActionFromJSON(`{
 		"request": {
-			"verb": "get",
+			"method": "get",
 			"body": {
 				"data": "["
 			}
@@ -185,7 +185,7 @@ func TestHTTPActionRequestBodyError(t *testing.T) {
 func TestHTTPActionResponseStatus(t *testing.T) {
 	result, err := HTTPActionFromJSON(`{
 		"request": {
-			"verb": "get"
+			"method": "get"
 		},
 		"response": {
 			"status": 200
@@ -206,7 +206,7 @@ func TestHTTPActionResponseStatus(t *testing.T) {
 func TestHTTPActionResponseHeaders(t *testing.T) {
 	result, err := HTTPActionFromJSON(`{
 		"request": {
-			"verb": "get"
+			"method": "get"
 		},
 		"response": {
 			"headers": {
@@ -236,7 +236,7 @@ func TestHTTPActionResponseHeaders(t *testing.T) {
 func TestHTTPActionResponseBody(t *testing.T) {
 	result, err := HTTPActionFromJSON(`{
 		"request": {
-			"verb": "get"
+			"method": "get"
 		},
 		"response": {
 			"body": {

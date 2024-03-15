@@ -1,6 +1,8 @@
 package router
 
-import "regexp"
+import (
+	"regexp"
+)
 
 type Path struct {
 	Regexp *regexp.Regexp
@@ -65,9 +67,9 @@ func (p *Path) Find(path []string) *Path {
 		return p
 	}
 
-	if p.Regexp != nil && p.Regexp.MatchString(path[0]) {
-		path = path[1:]
+	if child := p.findChild(path[0]); child != nil {
+		return child.Find(path[1:])
 	}
 
-	return p.findChild(path[0]).Find(path[1:])
+	return nil
 }

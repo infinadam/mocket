@@ -3,6 +3,7 @@ package router
 import (
 	"encoding/json"
 	"errors"
+	"net/http"
 	"regexp"
 	"strings"
 )
@@ -27,7 +28,7 @@ type HTTPAction struct {
 
 type httpJSON struct {
 	Request struct {
-		Verb    string            `json:"verb"`
+		Method  string            `json:"method"`
 		Path    string            `json:"url"`
 		Headers map[string]string `json:"headers"`
 		Body    any               `json:"body"`
@@ -40,14 +41,14 @@ type httpJSON struct {
 }
 
 func requestPath(action *HTTPAction, parsed *httpJSON) error {
-	verb := strings.ToLower(parsed.Request.Verb)
+	method := strings.ToLower(parsed.Request.Method)
 
-	switch verb {
+	switch method {
 	case "delete", "get", "head", "options", "patch", "post", "put":
-		re, _ := regexp.Compile(verb)
+		re, _ := regexp.Compile(method)
 		action.Request.Path = append(action.Request.Path, re)
 	default:
-		return errors.New("unrecognized verb")
+		return errors.New("unrecognized method")
 	}
 
 	for _, s := range strings.Split(parsed.Request.Path, "/") {
@@ -113,4 +114,12 @@ func HTTPActionFromJSON(input string) (*HTTPAction, error) {
 	action.Response.Headers = parsed.Response.Headers
 
 	return action, nil
+}
+
+func (a *HTTPAction) Write(w http.ResponseWriter) {
+	for k, v := range a.Response.Headers {
+		w.Header().Set(k, v)
+	}
+	w.WriteHeader(a.Response.Status)
+	w.Write(a.Response.Body)
 }
