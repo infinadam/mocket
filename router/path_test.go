@@ -12,7 +12,7 @@ func TestPathFindChild(t *testing.T) {
 	child.Regexp, _ = regexp.Compile("test")
 	tree.Children = append(tree.Children, &child)
 
-	found := tree.findChild("test")
+	found, _ := tree.findChild("test")
 
 	if found == nil {
 		t.Error("did not find child")
@@ -26,7 +26,7 @@ func TestPathFindMissingChild(t *testing.T) {
 	child.Regexp, _ = regexp.Compile("test")
 	tree.Children = append(tree.Children, &child)
 
-	found := tree.findChild("missing")
+	found, _ := tree.findChild("missing")
 
 	if found != nil {
 		t.Error("found a missing child")
@@ -40,10 +40,32 @@ func TestPathFindRegexChild(t *testing.T) {
 	child.Regexp, _ = regexp.Compile(`\d+`)
 	tree.Children = append(tree.Children, &child)
 
-	found := tree.findChild("123")
+	found, _ := tree.findChild("123")
 
 	if found == nil {
 		t.Error("did not find regular expression node")
+	}
+}
+
+func TestPathFindRegexGroups(t *testing.T) {
+	var tree, child Path
+
+	child.Regexp, _ = regexp.Compile(`(?P<test>a*)`)
+	tree.Children = append(tree.Children, &child)
+
+	found, group := tree.findChild("aaaa")
+
+	if found == nil {
+		t.Fatal("did not find regular expression node")
+	}
+
+	if group == nil {
+		t.Fatal("no groups included in search result")
+	}
+
+	t.Logf("%v", group)
+	if group["test"] != "aaaa" {
+		t.Error("expected groups to include \"aaaa\"")
 	}
 }
 
@@ -117,11 +139,11 @@ func TestPathCreatePath(t *testing.T) {
 		t.Error("invalid tree children")
 	}
 
-	test := tree.findChild("test")
+	test, _ := tree.findChild("test")
 	if test == nil {
 		t.Fatal("could not find \"test\".")
 	}
-	if test.findChild("child") == nil {
+	if c, _ := test.findChild("child"); c == nil {
 		t.Error("could not find \"child\".")
 	}
 }
@@ -141,7 +163,7 @@ func TestPathAddToExisting(t *testing.T) {
 
 	tree.Add(res)
 
-	if child.findChild("child2") == nil {
+	if c, _ := child.findChild("child2"); c == nil {
 		t.Error("could not find \"child2\".")
 	}
 }
@@ -163,11 +185,11 @@ func TestPathIdentity(t *testing.T) {
 
 	tree.Add(res)
 
-	if tree.findChild("child1") != &child1 {
+	if c, _ := tree.findChild("child1"); c != &child1 {
 		t.Error("unexpected child1")
 	}
 
-	if child1.findChild("child2") != &child2 {
+	if c, _ := child1.findChild("child2"); c != &child2 {
 		t.Error("unexpected child2")
 	}
 
@@ -209,7 +231,7 @@ func TestPathFindSimple(t *testing.T) {
 
 	tree.addChild(&child)
 
-	found := tree.Find([]string{"child"})
+	found, _ := tree.Find([]string{"child"}, nil)
 
 	if found == nil || found.Regexp.String() != "child" {
 		t.Error("did not find \"child\"")
@@ -225,7 +247,7 @@ func TestPathFindDeep(t *testing.T) {
 	tree.addChild(&child1)
 	child1.addChild(&child2)
 
-	found := tree.Find([]string{"child1", "child2"})
+	found, _ := tree.Find([]string{"child1", "child2"}, nil)
 
 	if found == nil || found.Regexp.String() != "child2" {
 		t.Error("did not find \"child2\"")
@@ -235,7 +257,7 @@ func TestPathFindDeep(t *testing.T) {
 // should find nothing in an empty tree
 func TestPathFindEmpty(t *testing.T) {
 	var tree Path
-	if found := tree.Find([]string{"test"}); found != nil {
+	if found, _ := tree.Find([]string{"test"}, nil); found != nil {
 		t.Error("expected nil when searching empty tree")
 	}
 }
@@ -247,7 +269,7 @@ func TestPathFindMissingPath(t *testing.T) {
 
 	tree.addChild(&child)
 
-	if found := tree.Find([]string{"missing"}); found != nil {
+	if found, _ := tree.Find([]string{"missing"}, nil); found != nil {
 		t.Error("expected nil when searching missing path")
 	}
 }
@@ -261,7 +283,7 @@ func TestFindShortPath(t *testing.T) {
 	tree.addChild(&child1)
 	child1.addChild(&child2)
 
-	if found := tree.Find([]string{"child1"}); found != &child1 {
+	if found, _ := tree.Find([]string{"child1"}, nil); found != &child1 {
 		t.Error("expected to find child1")
 	}
 }
@@ -275,8 +297,34 @@ func TestPathFindRegexp(t *testing.T) {
 	tree.addChild(&child1)
 	child1.addChild(&child2)
 
-	found := tree.Find([]string{"123", "test"})
+	found, _ := tree.Find([]string{"123", "test"}, nil)
 	if found != &child2 {
 		t.Error("did not find \"test\"")
+	}
+}
+
+func TestPathFindRegexpGroups(t *testing.T) {
+	var tree, child1, child2 Path
+	child1.Regexp, _ = regexp.Compile(`(?P<test1>a+)`)
+	child2.Regexp, _ = regexp.Compile("(?P<test2>b+)")
+
+	tree.addChild(&child1)
+	child1.addChild(&child2)
+
+	found, groups := tree.Find([]string{"aaa", "bbb"}, nil)
+	if found != &child2 {
+		t.Fatal("did not find \"test\"")
+	}
+
+	if groups == nil {
+		t.Fatal("no matching groups returned")
+	}
+
+	if groups["test1"] != "aaa" {
+		t.Errorf("expected \"test1\" to be \"aaa\", was %q", groups["test1"])
+	}
+
+	if groups["test2"] != "bbb" {
+		t.Errorf("expected \"test2\" to be \"bbb\", was %q", groups["test2"])
 	}
 }

@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"log"
 	"net/http"
 )
@@ -14,14 +13,11 @@ func main() {
 	flag.Parse()
 
 	log.Printf("mocket: reading script directory (%s)...\n", *scriptDir)
-	var server *Server
-	var err error
-	if server, err = MakeServer(*scriptDir); err != nil {
-		fmt.Printf("mocket: error making server (%v)", err)
-		return
+	if server, err := MakeServer(*scriptDir); err != nil {
+		log.Fatalf("mocket: error making server (%v)", err)
+	} else {
+		log.Printf("mocket: starting on (%s)...\n", *port)
+		http.HandleFunc("/", server.HandleRequest)
+		http.ListenAndServe(":"+*port, nil)
 	}
-
-	log.Printf("mocket: starting on (%s)...\n", *port)
-	http.HandleFunc("/", server.HandleRequest)
-	log.Fatal(http.ListenAndServe(":"+*port, nil))
 }

@@ -12,15 +12,18 @@ type Path struct {
 	Children []*Path
 }
 
-func (p *Path) findChild(name string) *Path {
+func (p *Path) findChild(name string) (*Path, map[string]string) {
 	for _, child := range p.Children {
 		re := child.Regexp
-		if re.String() == name || re.MatchString(name) {
-			return child
+		if re.String() == name {
+			return child, nil
+		}
+		if matched, groups := match(re, name); matched {
+			return child, groups
 		}
 	}
 
-	return nil
+	return nil, nil
 }
 
 func (p *Path) addChild(child *Path) {
@@ -28,7 +31,7 @@ func (p *Path) addChild(child *Path) {
 		return
 	}
 	name := child.Regexp.String()
-	if node := p.findChild(name); node == nil {
+	if node, _ := p.findChild(name); node == nil {
 		p.Children = append(p.Children, child)
 	}
 }
@@ -42,7 +45,7 @@ func (p *Path) Add(path []*regexp.Regexp) *Path {
 		path = path[1:]
 	}
 
-	node := p.findChild(path[0].String())
+	node, _ := p.findChild(path[0].String())
 	if node == nil {
 		node = new(Path)
 		node.Regexp = path[0]
@@ -53,14 +56,20 @@ func (p *Path) Add(path []*regexp.Regexp) *Path {
 	return node.Add(path[1:])
 }
 
-func (p *Path) Find(path []string) *Path {
+func (p *Path) Find(path []string, groups map[string]string) (*Path, map[string]string) {
 	if len(path) == 0 {
-		return p
+		return p, groups
 	}
 
-	if child := p.findChild(path[0]); child != nil {
-		return child.Find(path[1:])
+	if child, g := p.findChild(path[0]); child != nil {
+		if groups == nil {
+			groups = make(map[string]string)
+		}
+		for k, v := range g {
+			groups[k] = v
+		}
+		return child.Find(path[1:], groups)
 	}
 
-	return nil
+	return nil, groups
 }

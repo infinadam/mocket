@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 	"regexp"
+	"strconv"
 	"strings"
 )
 
@@ -45,7 +46,7 @@ func requestPath(action *HTTPAction, parsed *httpJSON) error {
 
 	switch method {
 	case "delete", "get", "head", "options", "patch", "post", "put":
-		re, _ := regexp.Compile(method)
+		re := regexp.MustCompile(method)
 		action.Request.Path = append(action.Request.Path, re)
 	default:
 		return errors.New("unrecognized method")
@@ -86,7 +87,8 @@ func requestHeaders(action *HTTPAction, parsed *httpJSON) error {
 func requestBody(action *HTTPAction, parsed *httpJSON) error {
 	var err error
 	body, _ := json.Marshal(parsed.Request.Body)
-	action.Request.Body, err = regexp.Compile(string(body))
+	unquoted, _ := strconv.Unquote(string(body))
+	action.Request.Body, err = regexp.Compile(unquoted)
 	return err
 }
 
@@ -116,10 +118,48 @@ func HTTPActionFromJSON(input []byte) (*HTTPAction, error) {
 	return action, nil
 }
 
-func (a *HTTPAction) Write(w http.ResponseWriter) {
+func replace(original []byte, vars map[string]string) []byte {
+	re := regexp.MustCompile(`{{([[:alnum:]]+)}}`)
+	matches := re.FindAllSubmatch(original, -1)
+	for _, m := range matches {
+		id := string(m[1])
+		r := regexp.MustCompile(string(m[0]))
+		original = r.ReplaceAll(original, []byte(vars[id]))
+	}
+
+	return original
+}
+
+func merge(a map[string]string, b map[string]string) map[string]string {
+	for k, v := range b {
+		a[k] = v
+	}
+	return a
+}
+
+// TODO: where are my tests?
+func (a *HTTPAction) CompareHeaders(label string, value string) (bool, map[string]string) {
+	for _, h := range a.Request.Headers {
+		if matched, ls := match(h.Label, label); !matched {
+			continue
+		} else if matched, vs := match(h.Value, value); !matched {
+			continue
+		} else {
+			return true, merge(ls, vs)
+		}
+	}
+
+	return false, nil
+}
+
+func (a *HTTPAction) CompareBody(body string) (bool, map[string]string) {
+	return match(a.Request.Body, body)
+}
+
+func (a *HTTPAction) Write(w http.ResponseWriter, vars map[string]string) {
 	for k, v := range a.Response.Headers {
-		w.Header().Set(k, v)
+		w.Header().Set(k, string(replace([]byte(v), vars)))
 	}
 	w.WriteHeader(a.Response.Status)
-	w.Write(a.Response.Body)
+	w.Write(replace(a.Response.Body, vars))
 }

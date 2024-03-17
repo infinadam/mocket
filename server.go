@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/infinadam/mocket/router"
+	"io"
 	"net/http"
 	"os"
 	"strings"
@@ -16,19 +17,13 @@ func actionFromEntry(dir string, e os.DirEntry) (*router.HTTPAction, error) {
 		return nil, nil
 	}
 
-	var err error
-	var json []byte
-
-	if json, err = os.ReadFile(dir + "/" + e.Name()); err != nil {
+	if json, err := os.ReadFile(dir + "/" + e.Name()); err != nil {
 		return nil, err
-	}
-
-	var action *router.HTTPAction
-	if action, err = router.HTTPActionFromJSON(json); err != nil {
+	} else if action, err := router.HTTPActionFromJSON(json); err != nil {
 		return nil, err
+	} else {
+		return action, nil
 	}
-
-	return action, nil
 }
 
 func MakeServer(dir string) (*Server, error) {
@@ -52,6 +47,15 @@ func MakeServer(dir string) (*Server, error) {
 	return server, nil
 }
 
+func merge(a map[string]string, b map[string]string) map[string]string {
+	for k, v := range b {
+		a[k] = v
+	}
+
+	return a
+}
+
+// TODO: clean me up!
 func (s *Server) HandleRequest(w http.ResponseWriter, req *http.Request) {
 	url := strings.Split(req.URL.Path, "/")
 	if req.Method == "" {
@@ -60,12 +64,27 @@ func (s *Server) HandleRequest(w http.ResponseWriter, req *http.Request) {
 		url[0] = strings.ToLower(req.Method)
 	}
 
-	node := s.path.Find(url)
+	node, groups := s.path.Find(url, nil)
 
 	if node == nil || node.Action == nil {
 		w.WriteHeader(404)
 		return
 	}
 
-	node.Action.Write(w)
+	for l, v := range req.Header {
+		_, vars := node.Action.CompareHeaders(l, strings.Join(v, ","))
+		groups = merge(groups, vars)
+	}
+
+	if body, err := io.ReadAll(req.Body); err != nil {
+		w.WriteHeader(404)
+		return
+	} else if matched, vars := node.Action.CompareBody(string(body)); !matched {
+		w.WriteHeader(404)
+		return
+	} else {
+		groups = merge(groups, vars)
+	}
+
+	node.Action.Write(w, groups)
 }

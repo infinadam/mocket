@@ -255,3 +255,23 @@ func TestHTTPActionResponseBody(t *testing.T) {
 		t.Errorf("expected body to be %q, received %q", expected, body)
 	}
 }
+
+// should replace variables with values
+func TestHTTPActionReplace(t *testing.T) {
+	result := replace([]byte("test {{replace}}"), map[string]string{
+		"replace": "aaa",
+	})
+
+	if string(result) != "test aaa" {
+		t.Errorf("expected \"test aaa\", got %q", result)
+	}
+}
+
+// should replace all variables, even with empty strings
+func TestHTTPActionReplaceNil(t *testing.T) {
+	result := replace([]byte("test {{nothing}}"), nil)
+
+	if string(result) != "test " {
+		t.Errorf("expected \"test \", got %q", result)
+	}
+}
